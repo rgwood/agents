@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.datadoghq.com)",
+      "WebFetch(domain:pypi.org)",
+      "Bash(./signal.py:*)",
+      "Bash(./signal_agent.py:*)",
+      "Bash(uv run python:*)",
+      "Bash(uv run:*)",
+      "WebFetch(domain:ddtrace.readthedocs.io)",
+      "WebSearch",
+      "Bash(python3:*)",
+      "Bash(uv pip list:*)",
+      "Bash(find:*)",
+      "Bash(pip show:*)"
+    ]
+  }
+}
