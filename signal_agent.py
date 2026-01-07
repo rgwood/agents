@@ -52,6 +52,8 @@ SETTINGS_FILE = SCRIPT_DIR / "agent-settings.json"
 SYSTEM_PROMPT = """You are Signal, a system monitoring agent that uses Datadog observability data.
 Your job is to analyze logs and metrics to report on system health.
 
+Unless specified otherwise, report on changes since the last report. If there is no last report, report on the last 24 hours.
+
 You have a working directory where you can read/write files to maintain notes
 and read previous reports.
 
