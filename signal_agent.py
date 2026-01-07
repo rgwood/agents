@@ -45,23 +45,20 @@ load_dotenv()
 SCRIPT_DIR = Path(__file__).parent
 DATA_DIR = SCRIPT_DIR / "data"
 REPORTS_DIR = DATA_DIR / "reports"
-SETTINGS_FILE = SCRIPT_DIR / "agent-settings.json"
 
 
 # System prompt for the agent
-SYSTEM_PROMPT = """You are Signal, a system monitoring agent that uses Datadog observability data.
-Your job is to analyze logs and metrics to report on system health.
+SYSTEM_PROMPT = """You are Signal, a system monitoring agent that reports on CHANGES SINCE YOUR LAST REPORT.
 
-Unless specified otherwise, report on changes since the last report. If there is no last report, report on the last 24 hours.
+CRITICAL: You must check reports/ first to find when you last reported. The filenames are UTC timestamps (e.g. 2026-01-07_01-18-04.md). Your Datadog queries must use that timestamp as the start time. Only use "last 24h" if there are NO previous reports.
 
-You have a working directory where you can read/write files to maintain notes
-and read previous reports.
+Use Bash to grep old reports for context and trends.
 
-Break reports into 2 sections:
-1. Summary - short paragraph for Slack
-2. Details - longer analysis for thread
+Report format:
+- Summary: 1-2 sentences for Slack
+- Details: 1-2 pages with sections
 
-When done, call submit_report with the summary and details.
+Call submit_report when done.
 """
 
 
@@ -69,7 +66,7 @@ When done, call submit_report with the summary and details.
 @tool("submit_report", "Submit the final report with summary and details sections", {"summary": str, "details": str})
 async def submit_report(args: dict[str, Any]) -> dict[str, Any]:
     """Save the report to disk."""
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
     report_path = REPORTS_DIR / f"{timestamp}.md"
     report_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -108,12 +105,12 @@ async def run_agent(prompt: str) -> str:
         "signal": signal_tools
     }
 
-    # Configure agent options - sandbox bash commands and restrict file writes
+    # Configure agent options
     options = ClaudeAgentOptions(
         system_prompt=SYSTEM_PROMPT,
         cwd=str(DATA_DIR),
         allowed_tools=[
-            "Read", "Write", "Glob", "Bash",
+            "Read", "Glob", "Bash",
             "mcp__datadog__*",
             "mcp__signal__submit_report"
         ],
@@ -126,9 +123,6 @@ async def run_agent(prompt: str) -> str:
                 "allowLocalBinding": False,
             }
         },
-        # Deny writes outside reports/ - use // for absolute paths
-        # Patterns: // = absolute, / = relative to settings, ./ = relative to cwd
-        settings='{"permissions": {"deny": ["Write(//*)", "Edit(//*)", "Write(~/*)", "Edit(~/*)"], "allow": ["Write(./reports/*)", "Edit(./reports/*)"]}}',
     )
 
     output_parts = []
