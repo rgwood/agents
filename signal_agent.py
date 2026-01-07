@@ -45,6 +45,7 @@ load_dotenv()
 SCRIPT_DIR = Path(__file__).parent
 DATA_DIR = SCRIPT_DIR / "data"
 REPORTS_DIR = DATA_DIR / "reports"
+SETTINGS_FILE = SCRIPT_DIR / "agent-settings.json"
 
 
 # System prompt for the agent
@@ -105,7 +106,7 @@ async def run_agent(prompt: str) -> str:
         "signal": signal_tools
     }
 
-    # Configure agent options
+    # Configure agent options - sandbox bash commands and restrict file writes
     options = ClaudeAgentOptions(
         system_prompt=SYSTEM_PROMPT,
         cwd=str(DATA_DIR),
@@ -116,6 +117,16 @@ async def run_agent(prompt: str) -> str:
         ],
         mcp_servers=mcp_servers,
         permission_mode="acceptEdits",
+        sandbox={
+            "enabled": True,
+            "autoAllowBashIfSandboxed": True,
+            "network": {
+                "allowLocalBinding": False,
+            }
+        },
+        # Deny writes outside reports/ - use // for absolute paths
+        # Patterns: // = absolute, / = relative to settings, ./ = relative to cwd
+        settings='{"permissions": {"deny": ["Write(//*)", "Edit(//*)", "Write(~/*)", "Edit(~/*)"], "allow": ["Write(./reports/*)", "Edit(./reports/*)"]}}',
     )
 
     output_parts = []
